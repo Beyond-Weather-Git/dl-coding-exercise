@@ -1,9 +1,10 @@
-
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import xarray as xr
+
 from constants import PROJECT_DIR
+
 
 def plot_gaussian_grid(
     data,
@@ -42,9 +43,7 @@ def plot_gaussian_grid(
     """
     # Check required coordinates
     if "latitude" not in data.coords or "longitude" not in data.coords:
-        raise ValueError(
-            "Dataset must contain 'latitude' and 'longitude' coordinates"
-        )
+        raise ValueError("Dataset must contain 'latitude' and 'longitude' coordinates")
 
     assert "point" in data.dims, "DataArray must have a 'point' dimension"
 
