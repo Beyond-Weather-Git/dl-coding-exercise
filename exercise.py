@@ -52,8 +52,6 @@ class ReducedGaussianDataset(Dataset):
     - Normalize the data if normalize=True (compute mean/std over time).
 
     🍎 Bonus (if you have time):
-    - Return area weights as a third element (input, target, weights) to support
-      area-weighted loss.
     - Implement area-weighted normalization (compute mean/std using cell_area as weights).
       A simple unweighted mean/std is fine if you're short on time.
     """
