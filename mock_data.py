@@ -131,7 +131,7 @@ def create_mock_weather_data(path: str = "weather_data.zarr") -> xr.Dataset:
 
     print("Chunking and saving dataset to Zarr format...")
     ds = ds.chunk({"time": 10, "point": 500})
-    ds.to_zarr(path, mode="w", zarr_format=3, consolidated=False)
+    ds.to_zarr(path, mode="w", zarr_version=3, consolidated=False)
     print(f"Mock data created at {path}")
     print(f"Total grid points: {total_points}")
     print(f"Time steps: {len(times)}")
