@@ -44,16 +44,18 @@ def load_and_inspect_data(zarr_path: str = "weather_data.zarr") -> xr.Dataset:
 
 class ReducedGaussianDataset(Dataset):
     """
-    TODO: Implement a PyTorch Dataset for weather prediction on reduced Gaussian grid.
+    PyTorch Dataset for weather prediction on reduced Gaussian grid.
 
-    Challenge: How do you handle patch extraction on a 1D array that represents
-    a sphere with varying resolution?
+    TODO:
+    - Implement __getitem__ so it returns (input, target).
+      Inputs and targets should be tensors of shape [C, N_points] (or [C, patch_size] if you implement patches).
+    - Normalize the data if normalize=True (compute mean/std over time).
 
-    Options to consider:
-    1. Work directly with the 1D representation
-    2. Interpolate to a regular grid for training
-    3. Use graph neural network approaches
-    4. Sample patches in spectral space
+    🍎 Bonus (if you have time):
+    - Return area weights as a third element (input, target, weights) to support
+      area-weighted loss.
+    - Implement area-weighted normalization (compute mean/std using cell_area as weights).
+      A simple unweighted mean/std is fine if you're short on time.
     """
 
     def __init__(
@@ -75,17 +77,14 @@ class ReducedGaussianDataset(Dataset):
 
         # Extract grid structure
         self.points_per_lat = data.attrs.get("points_per_latitude", [])
-        self.n_points = data.sizes["points"]
+        self.n_points = data.sizes["point"]
         self.cell_areas = data.cell_area.values
 
         # TODO: Calculate normalization statistics
-        # IMPORTANT: Weight by cell area when computing statistics!
         self.mean = {}
         self.std = {}
 
     def __len__(self):
-        # TODO: Calculate number of valid samples
-        # This depends on your approach (full grid vs patches)
         return self.data.sizes["time"] - self.lead_time
 
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -109,15 +108,11 @@ class ReducedGaussianDataset(Dataset):
 
 class SimpleWeatherModel(nn.Module):
     """
-    TODO: Implement a model that can handle reduced Gaussian grid data.
+    TODO: Complete the forward method.
 
-    Options:
-    1. Fully connected network (treats grid as 1D)
-    2. Graph Neural Network (build connectivity based on neighbors)
-    3. Spectral methods (spherical harmonics)
-    4. Interpolate to regular grid then use CNN
-
-    Consider the trade-offs of each approach!
+    A simple MLP for reduced Gaussian grid data.
+    Input:  [B, C, N_points]
+    Output: [B, C, N_points]
     """
 
     def __init__(
@@ -126,16 +121,14 @@ class SimpleWeatherModel(nn.Module):
     ):
         super().__init__()
         self.n_points = n_points
-        # Fully connected approach
-        # Input: [batch, n_vars, n_points]
-        # Output: [batch, n_vars, n_points]
         self.model = nn.Sequential(
-            nn.Linear(n_points, 512), nn.ReLU(), nn.Linear(512, n_points)
+            nn.Linear(n_points, 512), 
+            nn.ReLU(), 
+            nn.Linear(512, n_points)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # YOUR CODE HERE
-        # Handle different approaches
         return x
 
 
@@ -158,7 +151,7 @@ class AreaWeightedMSELoss(nn.Module):
             target: Targets [B, C, N_points]
             weights: Area weights [N_points] or [B, N_points]
         """
-        # YOUR CODE HERE
+        # BONUS : YOUR CODE HERE
         # Remember: proper area weighting is crucial for physical consistency!
 
         mse = (pred - target) ** 2
@@ -181,15 +174,12 @@ def train_step(
     optimizer: torch.optim.Optimizer,
     loss_fn: nn.Module,
     device: torch.device,
-    use_amp: bool = True,
 ) -> float:
     """
     TODO: Implement training step for reduced Gaussian grid model.
     """
     model.train()
     total_loss = 0.0
-
-    scaler = torch.cuda.amp.GradScaler() if use_amp else None
 
     for batch_idx, (inputs, targets, weights) in enumerate(dataloader):
         # YOUR CODE HERE
@@ -198,6 +188,31 @@ def train_step(
 
     return total_loss / len(dataloader)
 
+# ============================================================================
+# TASK 4: Inference Step (3 minutes)
+# ============================================================================
+
+
+def inference_step( model: nn.Module, inputs: torch.Tensor, device: torch.device, ) -> torch.Tensor: 
+    """ TODO: Implement inference step.""" 
+    # YOUR CODE HERE 
+    return inputs
+
+def create_loss_function(normalize_by_area: bool = True) -> nn.Module:
+    """
+    Factory function to create the loss function.
+
+    By default returns the AreaWeightedMSELoss, which accounts for unequal grid cell
+    areas on a reduced Gaussian grid.
+
+    Args:
+        normalize_by_area: If True, normalize by total area (sum of weights).
+                           If False, just take the mean of weighted errors.
+
+    Returns:
+        A torch.nn.Module loss function.
+    """
+    return AreaWeightedMSELoss(normalize_by_area=normalize_by_area)
 
 # ============================================================================
 # MAIN EXECUTION (Provided to test your implementation)
@@ -227,7 +242,7 @@ if __name__ == "__main__":
     print("=" * 50)
 
     # Uncomment when implemented:
-    # model = SimpleWeatherModel()
+    # model = SimpleWeatherModel(dataset.n_points, len(dataset.variables))
     # loss_fn = create_loss_function()
     # optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -237,6 +252,10 @@ if __name__ == "__main__":
     # # Run one training step
     # loss = train_step(model, dataloader, optimizer, loss_fn, device)
     # print(f"Training loss: {loss:.4f}")
+    # Run inference step 
+    # sample_inputs, _, _ = next(iter(dataloader)) 
+    # preds = inference_step(model, sample_inputs, device) 
+    # print(f"Inference output shape: {preds.shape}")
 
     print("\n" + "=" * 50)
     print("Assignment complete! Please walk through your implementation.")
