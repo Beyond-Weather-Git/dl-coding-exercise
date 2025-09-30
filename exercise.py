@@ -240,7 +240,7 @@ if __name__ == "__main__":
     print("=" * 50)
 
     # Uncomment when implemented:
-    # model = SimpleWeatherModel(dataset.n_points, len(dataset.variables))
+    # model = SimpleWeatherModel(dataset.n_points)
     # loss_fn = create_loss_function()
     # optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
